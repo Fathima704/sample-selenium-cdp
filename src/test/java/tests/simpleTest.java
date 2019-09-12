@@ -4,28 +4,16 @@ import org.junit.After;
 import org.junit.Test;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.devtools.DevTools;
-import org.openqa.selenium.devtools.network.Network;
 import org.openqa.selenium.devtools.network.model.ConnectionType;
-import org.openqa.selenium.devtools.network.model.RequestId;
 import org.openqa.selenium.devtools.performance.*;
-import org.openqa.selenium.devtools.performance.model.Metric;
 import org.openqa.selenium.devtools.performance.model.TimeDomain;
-import org.openqa.selenium.devtools.profiler.Profiler;
-//import org.openqa.selenium.devtools;
-import org.openqa.selenium.devtools.*;
 import org.openqa.selenium.devtools.security.Security;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
+import java.util.*;
+
 import static org.openqa.selenium.devtools.network.Network.*;
-import static org.openqa.selenium.devtools.network.Network.getCertificate;
-import static org.openqa.selenium.devtools.performance.Performance.*;
 import static org.openqa.selenium.devtools.security.Security.setIgnoreCertificateErrors;
-
-import static org.junit.Assert.assertTrue;
 
 
 public class simpleTest {
@@ -35,7 +23,7 @@ public class simpleTest {
 
 
     @Test
-    public void simulateBandwidth() {
+    public void simulateBandwidth1() {
 
         driver.get("http://www.facebook.com");
 
@@ -74,7 +62,29 @@ public class simpleTest {
         devTools.close();
     }
 
-    // Following needs to be implemented
+    @Test
+    public void simulateBandwidth() {
+        Message message = enableNetwork();
+        driver.get("http://www.facebook.com");
+        driver.executeCdpCommand(message.method, message.params);
+        Message simulateNetwork = setNetworkBandWidth();
+        driver.executeCdpCommand(simulateNetwork.method, simulateNetwork.params);
+        driver.get("http://www.google.com");
+
+    }
+
+    @Test
+    public void setLocation()  {
+        Message message = enableEmulation();
+        driver.executeCdpCommand(message.method, message.params);
+        Message simulateLocation = setGeoLocation1();
+        driver.executeCdpCommand(simulateLocation.method, simulateLocation.params);
+        driver.get("https://www.google.com/maps");
+
+    }
+
+
+    // Following tests needs to be implemented
 
     @Test
     public void trackNetwork() {
@@ -85,12 +95,51 @@ public class simpleTest {
     }
 
     @Test
-    public void setGeoLocation() {
-
+    public void mockWebResponse() {
     }
 
-    @Test
-    public void mockWebResponse() {
+    private Message setNetworkBandWidth() {
+        Message msg = new Message("Network.emulateNetworkConditions");
+        msg.addParam("offline", false);
+        msg.addParam("latency", 100);
+        msg.addParam("downloadThroughput", 10000);
+        msg.addParam("uploadThroughput", 2000);
+        return msg;
+    }
+
+
+    private Message enableNetwork() {
+        Message msg = new Message("Network.enable");
+        msg.addParam("maxTotalBufferSize", 10000000);
+        return msg;
+    }
+
+    private Message enableEmulation() {
+        Message msg = new Message("Emulation.setFocusEmulationEnabled");
+        msg.addParam("enabled", true);
+        return msg;
+    }
+    private Message setGeoLocation1() {
+        Message msg = new Message("Emulation.setGeolocationOverride");
+        msg.addParam("latitude", 19.075984);
+        msg.addParam("longitude", 72.877656);
+        return msg;
+    }
+
+
+    public class Message {
+        private String method;
+        private Map<String,Object> params;
+
+        Message(String method) {
+            this.method = method;
+        }
+
+        void addParam(String key, Object value){
+            if(Objects.isNull(params))
+                params = new HashMap<>();
+            params.put(key,value);
+        }
     }
 
     @After
