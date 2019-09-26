@@ -23,7 +23,7 @@ public class simpleTest {
 
 
     @Test
-    public void simulateBandwidth1() {
+    public void simulateBandwidthWithNetwork() {
 
         driver.get("http://www.facebook.com");
 
@@ -34,6 +34,27 @@ public class simpleTest {
         devTools.send(
                 emulateNetworkConditions(false, 100, 1000, 2000, Optional.of(ConnectionType.cellular3g)));
         driver.get("http://www.google.com");
+
+    }
+
+    @Test
+    public void simulateBandwidthWithExecCDP() {
+        Message message = enableNetwork();
+        driver.get("http://www.facebook.com");
+        driver.executeCdpCommand(message.method, message.params);
+        Message simulateNetwork = setNetworkBandWidth();
+        driver.executeCdpCommand(simulateNetwork.method, simulateNetwork.params);
+        driver.get("http://www.google.com");
+
+    }
+
+    @Test
+    public void setLocation() {
+        driver.get("https://the-internet.herokuapp.com/geolocation");
+
+        Message simulateLocation = overrideLocation();
+        driver.executeCdpCommand(simulateLocation.method, simulateLocation.params);
+        driver.findElementByXPath("//*[@id=\"content\"]/div/button").click();
 
     }
 
@@ -61,28 +82,6 @@ public class simpleTest {
         driver.get("http://www.facebook.com");
         devTools.close();
     }
-
-    @Test
-    public void simulateBandwidth() {
-        Message message = enableNetwork();
-        driver.get("http://www.facebook.com");
-        driver.executeCdpCommand(message.method, message.params);
-        Message simulateNetwork = setNetworkBandWidth();
-        driver.executeCdpCommand(simulateNetwork.method, simulateNetwork.params);
-        driver.get("http://www.google.com");
-
-    }
-
-    @Test
-    public void setLocation()  {
-        Message message = enableEmulation();
-        driver.executeCdpCommand(message.method, message.params);
-        Message simulateLocation = setGeoLocation1();
-        driver.executeCdpCommand(simulateLocation.method, simulateLocation.params);
-        driver.get("https://www.google.com/maps");
-
-    }
-
 
     // Following tests needs to be implemented
 
@@ -114,18 +113,13 @@ public class simpleTest {
         return msg;
     }
 
-    private Message enableEmulation() {
-        Message msg = new Message("Emulation.setFocusEmulationEnabled");
-        msg.addParam("enabled", true);
-        return msg;
-    }
-    private Message setGeoLocation1() {
+    private Message overrideLocation() {
         Message msg = new Message("Emulation.setGeolocationOverride");
         msg.addParam("latitude", 19.075984);
         msg.addParam("longitude", 72.877656);
+        msg.addParam("accuracy", 1);
         return msg;
     }
-
 
     public class Message {
         private String method;
