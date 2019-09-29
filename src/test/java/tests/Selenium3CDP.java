@@ -1,8 +1,10 @@
 package tests;
 
+import com.neovisionaries.ws.client.WebSocketException;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.devtools.DevTools;
@@ -13,15 +15,16 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.IOException;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Stream;
+
+import static tests.CDPClient.getDynamicID;
 
 public class Selenium3CDP {
 
@@ -48,7 +51,6 @@ public class Selenium3CDP {
         crcapabilities.setCapability(CapabilityType.LOGGING_PREFS, logPrefs);
 
         System.setProperty(ChromeDriverService.CHROME_DRIVER_LOG_PROPERTY, System.getProperty("user.dir") + "/target/chromedriver.log");
-        //System.setProperty(ChromeDriverService.CHROME_DRIVER_EXE_PROPERTY, System.getProperty("user.dir") + "/driver/chromedriver");
         service = new ChromeDriverService.Builder()
             .usingAnyFreePort()
             .withVerbose(true)
@@ -63,14 +65,39 @@ public class Selenium3CDP {
     }
 
     @Test
-    public void testApp() throws IOException {
+    public void testApp() throws IOException, WebSocketException, InterruptedException {
         System.out.println("====");
         String ws = null;
         Stream<String> lines = Files.lines(Paths.get(System.getProperty("user.dir") + "/target/chromedriver.log"));
-        Optional<String> hasDevTools = lines.filter(s -> s.contains("DevTools listening on")).findFirst();
-        ws = hasDevTools.get().split("on")[1].trim();
-        System.out.println(ws);
+        Optional<String> hasDevTools = lines.filter(s -> s.contains("DevTools HTTP Request:")).findFirst();
+        ws = hasDevTools.get().substring(hasDevTools.get().indexOf("http"), hasDevTools.get().length()).replace("/version","");
         lines.close();
+
+        URL url = new URL(ws);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        String json = org.apache.commons.io.IOUtils.toString(reader);
+        JSONArray jsonObject = new JSONArray(json);
+        String webSocketDebuggerUrl = jsonObject.getJSONObject(0).get("webSocketDebuggerUrl").toString();
+
+        CDPClient cdpClient = new CDPClient(webSocketDebuggerUrl);
+        driver.navigate().to("https://framework.realtime.co/demo/web-push");
+        int id = getDynamicID();
+
+        JSONObject orderJSON = new JSONObject();
+        JSONObject objects = new JSONObject();
+
+        orderJSON.put("id", id);
+        orderJSON.put("method", "Storage.clearDataForOrigin");
+
+        objects.put("origin", "https://framework.realtime.co");
+        objects.put("storageTypes", "all");
+        orderJSON.put("params", objects);
+        cdpClient.sendMessage(orderJSON.toString());
+        Thread.sleep(5000);
+
     }
+
 
 }
