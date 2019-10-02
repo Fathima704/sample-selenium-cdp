@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.devtools.Command;
 import org.openqa.selenium.devtools.DevTools;
+import org.openqa.selenium.devtools.Message;
 import org.openqa.selenium.devtools.network.Network;
 import org.openqa.selenium.devtools.network.model.ConnectionType;
 import org.openqa.selenium.devtools.network.model.InterceptionStage;
@@ -18,6 +19,12 @@ import org.openqa.selenium.devtools.network.model.ResourceType;
 import org.openqa.selenium.devtools.performance.Performance;
 import org.openqa.selenium.devtools.performance.model.TimeDomain;
 import org.openqa.selenium.devtools.security.Security;
+import org.openqa.selenium.logging.LogEntries;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
 
 import java.util.Optional;
 
@@ -25,7 +32,7 @@ import static org.openqa.selenium.devtools.network.Network.*;
 import static org.openqa.selenium.devtools.security.Security.setIgnoreCertificateErrors;
 
 
-public class simpleTest {
+public class Selenium4CDP {
 
     ChromeDriver driver;
     DevTools devTools;
@@ -35,7 +42,6 @@ public class simpleTest {
         driver = new ChromeDriver();
         devTools = driver.getDevTools();
     }
-
 
     @Test
     public void simulateBandwidthWithNetwork() {
@@ -54,19 +60,20 @@ public class simpleTest {
 
     @Test
     public void simulateBandwidthWithExecCDP() {
-        MessageBuilder message = enableNetwork();
+        MessageBuilder message = Messages.enableNetwork();
         driver.get("http://www.facebook.com");
         driver.executeCdpCommand(message.method, message.params);
-        MessageBuilder simulateNetwork = setNetworkBandWidth();
+        MessageBuilder simulateNetwork = Messages.setNetworkBandWidth();
         driver.executeCdpCommand(simulateNetwork.method, simulateNetwork.params);
         driver.get("http://www.google.com");
 
     }
 
     @Test
-    public void setLocation() {
+    public void setGeolocation() {
         driver.get("https://the-internet.herokuapp.com/geolocation");
-        MessageBuilder simulateLocation = overrideLocation();
+
+        MessageBuilder simulateLocation = Messages.overrideLocation();
         driver.executeCdpCommand(simulateLocation.method, simulateLocation.params);
         driver.findElementByXPath("//*[@id=\"content\"]/div/button").click();
 
@@ -76,7 +83,6 @@ public class simpleTest {
     public void loadInsecureWebsite() {
 
         devTools.send(Security.enable());
-
         devTools.send(setIgnoreCertificateErrors(false));
 
 //Todo: Test this
@@ -92,6 +98,7 @@ public class simpleTest {
         devTools.send(Performance.setTimeDomain(TimeDomain.timeTicks));
         devTools.send(Performance.enable());
         System.out.println(devTools.send(Performance.getMetrics()));
+
         driver.get("http://www.facebook.com");
         devTools.close();
     }
