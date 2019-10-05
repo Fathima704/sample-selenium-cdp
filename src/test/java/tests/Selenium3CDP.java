@@ -30,7 +30,7 @@ public class Selenium3CDP {
     }
 
     @Test
-    public void testApp() throws IOException, WebSocketException, InterruptedException {
+    public void clearStorage() throws IOException, WebSocketException {
         CDPClient cdpClient = Utils.getInstance().getCdpClient();
         driver.navigate().to("https://framework.realtime.co/demo/web-push");
         int id = Utils.getInstance().getDynamicID();
@@ -49,11 +49,11 @@ public class Selenium3CDP {
 
     }
 
-
     @Test
     public void seleniumMockingImages() throws Exception {
         byte[] fileContent = FileUtils.readFileToByteArray(new File(System.getProperty("user.dir") + "/logo.png"));
         String encodedString = Base64.getEncoder().encodeToString(fileContent);
+
         CDPClient cdpClient = Utils.getInstance().getCdpClient();
         int id = Utils.getInstance().getDynamicID();
         cdpClient.sendMessage(buildRequestInterceptorPatternMessage(id, "*", "Image"));

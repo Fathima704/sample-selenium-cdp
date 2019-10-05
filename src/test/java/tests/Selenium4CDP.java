@@ -44,8 +44,8 @@ public class Selenium4CDP {
     }
 
     @Test
-    public void simulateBandwidthWithNetwork() {
-        driver.get("http://www.facebook.com");
+    public void simulateBandwidthWithNetwork() throws InterruptedException {
+        driver.get("http://www.google.com");
         devTools.createSession();
         devTools.send(enable(Optional.of(100000000), Optional.empty(), Optional.empty()));
         devTools.send(
@@ -54,28 +54,56 @@ public class Selenium4CDP {
                 1000,
                 2000,
                 Optional.of(ConnectionType.cellular3g)));
-        driver.get("http://www.google.com");
+        driver.get("https://seleniumconf.co.uk");
+        Thread.sleep(10000);
 
     }
 
     @Test
-    public void simulateBandwidthWithExecCDP() {
+    public void simulateBandwidthWithExecCDP() throws InterruptedException {
         MessageBuilder message = Messages.enableNetwork();
-        driver.get("http://www.facebook.com");
+        driver.get("http://www.google.com");
         driver.executeCdpCommand(message.method, message.params);
         MessageBuilder simulateNetwork = Messages.setNetworkBandWidth();
         driver.executeCdpCommand(simulateNetwork.method, simulateNetwork.params);
-        driver.get("http://www.google.com");
+        driver.get("https://seleniumconf.co.uk");
+        Thread.sleep(10000);
 
     }
 
     @Test
-    public void setGeolocation() {
+    public void setGeolocation() throws InterruptedException {
+        String getLocationLocator = "//*[@id=\"content\"]/div/button";
+
         driver.get("https://the-internet.herokuapp.com/geolocation");
 
         MessageBuilder simulateLocation = Messages.overrideLocation();
         driver.executeCdpCommand(simulateLocation.method, simulateLocation.params);
-        driver.findElementByXPath("//*[@id=\"content\"]/div/button").click();
+
+        driver.findElementByXPath(getLocationLocator).click();
+        Thread.sleep(50000);
+
+    }
+
+    @Test
+    public void mockWebResponse() throws InterruptedException {
+        devTools.createSession();
+        devTools.send(enable(Optional.of(100000000), Optional.empty(), Optional.empty()));
+
+        devTools.addListener(requestIntercepted(),
+                requestIntercepted -> devTools.send(
+                        continueInterceptedRequest(requestIntercepted.getInterceptionId(),
+                                Optional.empty(),
+                                Optional.of("This is Mocked!!!!!"),
+                                Optional.empty(), Optional.empty(),
+                                Optional.empty(),
+                                Optional.empty(), Optional.empty())));
+        RequestPattern
+                requestPattern =
+                new RequestPattern("*", ResourceType.Document, InterceptionStage.HeadersReceived);
+        devTools.send(setRequestInterception(ImmutableList.of(requestPattern)));
+        driver.navigate().to("http://petstore.swagger.io/v2/swagger.json");
+        Thread.sleep(5000);
 
     }
 
@@ -101,52 +129,6 @@ public class Selenium4CDP {
 
         driver.get("http://www.facebook.com");
         devTools.close();
-    }
-
-    @Test
-    public void mockWebResponse() throws InterruptedException {
-        devTools.createSession();
-        devTools.send(enable(Optional.of(100000000), Optional.empty(), Optional.empty()));
-
-        devTools.addListener(requestIntercepted(),
-            requestIntercepted -> devTools.send(
-                continueInterceptedRequest(requestIntercepted.getInterceptionId(),
-                    Optional.empty(),
-                    Optional.of("This is Mocked!!!!!"),
-                    Optional.empty(), Optional.empty(),
-                    Optional.empty(),
-                    Optional.empty(), Optional.empty())));
-        RequestPattern
-            requestPattern =
-            new RequestPattern("*", ResourceType.Document, InterceptionStage.HeadersReceived);
-        devTools.send(setRequestInterception(ImmutableList.of(requestPattern)));
-        driver.navigate().to("http://petstore.swagger.io/v2/swagger.json");
-        Thread.sleep(5000);
-
-    }
-
-    private MessageBuilder setNetworkBandWidth() {
-        MessageBuilder msg = new MessageBuilder("Network.emulateNetworkConditions");
-        msg.addParam("offline", false);
-        msg.addParam("latency", 100);
-        msg.addParam("downloadThroughput", 10000);
-        msg.addParam("uploadThroughput", 2000);
-        return msg;
-    }
-
-
-    private MessageBuilder enableNetwork() {
-        MessageBuilder msg = new MessageBuilder("Network.enable");
-        msg.addParam("maxTotalBufferSize", 10000000);
-        return msg;
-    }
-
-    private MessageBuilder overrideLocation() {
-        MessageBuilder msg = new MessageBuilder("Emulation.setGeolocationOverride");
-        msg.addParam("latitude", 19.075984);
-        msg.addParam("longitude", 72.877656);
-        msg.addParam("accuracy", 1);
-        return msg;
     }
 
     @After

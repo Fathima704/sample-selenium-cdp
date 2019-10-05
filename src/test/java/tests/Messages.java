@@ -19,8 +19,8 @@ public class Messages {
 
     public static MessageBuilder overrideLocation() {
         MessageBuilder msg = new MessageBuilder("Emulation.setGeolocationOverride");
-        msg.addParam("latitude", 19.075984);
-        msg.addParam("longitude", 72.877656);
+        msg.addParam("latitude", 27.1751);
+        msg.addParam("longitude", 78.0421);
         msg.addParam("accuracy", 1);
         return msg;
     }
