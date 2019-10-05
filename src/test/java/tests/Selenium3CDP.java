@@ -41,7 +41,7 @@ public class Selenium3CDP {
         orderJSON.put("id", id);
         orderJSON.put("method", "Storage.clearDataForOrigin");
 
-        objects.put("origin", "https://framework.realtijume.co");
+        objects.put("origin", "https://framework.realtime.co");
         objects.put("storageTypes", "all");
         orderJSON.put("params", objects);
         cdpClient.sendMessage(orderJSON.toString());
