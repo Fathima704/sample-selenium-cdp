@@ -31,20 +31,13 @@ import java.util.Optional;
 import static org.openqa.selenium.devtools.network.Network.*;
 import static org.openqa.selenium.devtools.security.Security.setIgnoreCertificateErrors;
 
-
-public class Selenium4CDP {
+public class Selenium4CDPTest {
 
     ChromeDriver driver;
     DevTools devTools;
 
-    @Before
-    public void setUp() {
-        driver = new ChromeDriver();
-        devTools = driver.getDevTools();
-    }
-
     @Test
-    public void simulateBandwidthWithNetwork() throws InterruptedException {
+    public void simulateNetworkBandwidthTest() throws InterruptedException {
         driver.get("http://www.google.com");
         devTools.createSession();
         devTools.send(enable(Optional.of(100000000), Optional.empty(), Optional.empty()));
@@ -55,38 +48,33 @@ public class Selenium4CDP {
                 2000,
                 Optional.of(ConnectionType.cellular3g)));
         driver.get("https://seleniumconf.co.uk");
-        Thread.sleep(10000);
-
+        waitForWebsiteToLoad();
     }
 
     @Test
-    public void simulateBandwidthWithExecCDP() throws InterruptedException {
+    public void simulateBandwidthWithExecCDPTest() throws InterruptedException {
         MessageBuilder message = Messages.enableNetwork();
         driver.get("http://www.google.com");
         driver.executeCdpCommand(message.method, message.params);
         MessageBuilder simulateNetwork = Messages.setNetworkBandWidth();
         driver.executeCdpCommand(simulateNetwork.method, simulateNetwork.params);
         driver.get("https://seleniumconf.co.uk");
-        Thread.sleep(10000);
-
+        waitForWebsiteToLoad();
     }
 
     @Test
-    public void setGeolocation() throws InterruptedException {
+    public void setGeolocationTest() throws InterruptedException {
         String getLocationLocator = "//*[@id=\"content\"]/div/button";
-
         driver.get("https://the-internet.herokuapp.com/geolocation");
 
         MessageBuilder simulateLocation = Messages.overrideLocation();
         driver.executeCdpCommand(simulateLocation.method, simulateLocation.params);
-
         driver.findElementByXPath(getLocationLocator).click();
-        Thread.sleep(50000);
-
+        waitForWebsiteToLoad();
     }
 
     @Test
-    public void mockWebResponse() throws InterruptedException {
+    public void mockWebResponseTest() throws InterruptedException {
         devTools.createSession();
         devTools.send(enable(Optional.of(100000000), Optional.empty(), Optional.empty()));
 
@@ -103,25 +91,20 @@ public class Selenium4CDP {
                 new RequestPattern("*", ResourceType.Document, InterceptionStage.HeadersReceived);
         devTools.send(setRequestInterception(ImmutableList.of(requestPattern)));
         driver.navigate().to("http://petstore.swagger.io/v2/swagger.json");
-        Thread.sleep(5000);
-
+        waitForWebsiteToLoad();
     }
 
     @Test
-    public void loadInsecureWebsite() {
-
+    public void loadInsecureWebsiteTest() {
         devTools.send(Security.enable());
         devTools.send(setIgnoreCertificateErrors(false));
-
-//Todo: Test this
         driver.get("https://google.com/");
         devTools.send(Security.disable());
-
+        waitForWebsiteToLoad();
     }
 
     @Test
-    public void performance() {
-
+    public void performanceTest() {
         devTools.createSession();
         devTools.send(Performance.setTimeDomain(TimeDomain.timeTicks));
         devTools.send(Performance.enable());
@@ -137,4 +120,13 @@ public class Selenium4CDP {
         driver.quit();
     }
 
+    @Before
+    public void setUp() {
+        driver = new ChromeDriver();
+        devTools = driver.getDevTools();
+    }
+
+    public void waitForWebsiteToLoad() {
+        Utils.getInstance().waitFor(10000);
+    }
 }
